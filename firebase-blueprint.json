@@ -1,0 +1,74 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A user of the system.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "user"] }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "SalonSettings": {
+      "title": "Salon Settings",
+      "description": "General configuration for the salon and AI receptionist.",
+      "type": "object",
+      "properties": {
+        "salonName": { "type": "string", "description": "The name of the salon." },
+        "salonAddress": { "type": "string", "description": "The physical address of the salon." },
+        "salonPhone": { "type": "string", "description": "The contact phone number." },
+        "salonEmail": { "type": "string", "description": "The public email address." },
+        "salonHours": { "type": "string", "description": "Working hours (e.g., Mon-Sun: 11AM-8PM)." },
+        "aiInstructions": { "type": "string", "description": "Specific instructions and knowledge for the AI receptionist." },
+        "geminiApiKey": { "type": "string", "description": "The Google Gemini API Key." }
+      },
+      "required": ["salonName", "aiInstructions"]
+    },
+    "SalonPackage": {
+      "title": "Salon Package",
+      "description": "A service package offered by the salon.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "The name of the package." },
+        "price": { "type": "string", "description": "The price of the package (e.g., 2,999)." },
+        "description": { "type": "string", "description": "A brief description of the package." },
+        "category": { "type": "string", "description": "The category (e.g., Facials, Hair, Makeup)." }
+      },
+      "required": ["name", "price"]
+    },
+    "Appointment": {
+      "title": "Appointment",
+      "description": "A booking made by a client.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "The client's full name." },
+        "email": { "type": "string", "description": "The client's email address." },
+        "packageName": { "type": "string", "description": "The name of the booked package." },
+        "startTime": { "type": "string", "description": "The start time in ISO 8601 format." },
+        "eventId": { "type": "string", "description": "The unique ID of the Google Calendar event." },
+        "createdAt": { "type": "string", "description": "When the booking was created." }
+      },
+      "required": ["name", "email", "packageName", "startTime"]
+    }
+  },
+  "firestore": {
+    "settings/salon": {
+      "schema": "SalonSettings",
+      "description": "Single document containing general salon settings."
+    },
+    "packages": {
+      "schema": "SalonPackage",
+      "description": "Collection of all available salon packages."
+    },
+    "appointments": {
+      "schema": "Appointment",
+      "description": "Collection of all client bookings."
+    },
+    "users": {
+      "schema": "User",
+      "description": "Collection of all users and their roles."
+    }
+  }
+}

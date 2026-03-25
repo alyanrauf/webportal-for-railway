@@ -1,0 +1,62 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+        (
+          (request.auth.token.email == "alyanraufarpk@gmail.com" && request.auth.token.email_verified == true) ||
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin")
+        );
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    // Users: Users can read their own data, Admins can do everything
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      allow write: if isAdmin() || (isAuthenticated() && isOwner(userId) && request.resource.data.role == "user");
+    }
+
+    // Settings: Public read, Admin write
+    match /settings/salon {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Packages: Public read, Admin write
+    match /packages/{packageId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Appointments: Public create, Admin read/write
+    match /appointments/{appointmentId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+    
+    // Connection test path
+    match /test/connection {
+      allow read: if true;
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
