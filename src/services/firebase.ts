@@ -3,7 +3,24 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/
 import { getFirestore, doc, collection, onSnapshot, setDoc, updateDoc, deleteDoc, getDoc, getDocs, query, where, orderBy, limit, getDocFromServer, addDoc } from 'firebase/firestore';
 
 // Import the Firebase configuration
-import firebaseConfig from './firebase-applet-config.json';
+import firebaseConfigFromFile from './firebase-applet-config.json';
+
+// Use environment variables if available, otherwise fallback to the config file
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || firebaseConfigFromFile.apiKey,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || firebaseConfigFromFile.authDomain,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || firebaseConfigFromFile.projectId,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || firebaseConfigFromFile.storageBucket,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || firebaseConfigFromFile.messagingSenderId,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || firebaseConfigFromFile.appId,
+  firestoreDatabaseId: import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || firebaseConfigFromFile.firestoreDatabaseId,
+};
+
+// Security check: authDomain should NOT be the app domain
+if (firebaseConfig.authDomain.includes('railway.app') || firebaseConfig.authDomain.includes('run.app')) {
+  console.warn('CRITICAL: VITE_FIREBASE_AUTH_DOMAIN is set to your app domain. This will cause login failures.');
+  console.warn('It should be your Firebase project domain, e.g., gen-lang-client-0692032472.firebaseapp.com');
+}
 
 // Initialize Firebase SDK
 const app = initializeApp(firebaseConfig);
@@ -12,7 +29,20 @@ export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 
 // Auth Helpers
-export const loginWithGoogle = () => signInWithPopup(auth, googleProvider);
+export const loginWithGoogle = async () => {
+  try {
+    console.log('Attempting Google Login from domain:', window.location.hostname);
+    return await signInWithPopup(auth, googleProvider);
+  } catch (error: any) {
+    if (error.code === 'auth/unauthorized-domain') {
+      console.error('Firebase Auth Error: Unauthorized Domain.');
+      console.error('Current Domain:', window.location.hostname);
+      console.error('Please ensure this domain is added to Firebase Console -> Authentication -> Settings -> Authorized domains');
+      alert(`Login failed: Unauthorized Domain (${window.location.hostname}). Please add this domain to your Firebase Console settings.`);
+    }
+    throw error;
+  }
+};
 export const logout = () => signOut(auth);
 
 // Firestore Error Handling
