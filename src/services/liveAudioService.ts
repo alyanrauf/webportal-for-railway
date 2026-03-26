@@ -27,15 +27,22 @@ export class LiveAudioService {
   private callbacks: LiveAudioCallbacks;
 
   constructor(callbacks: LiveAudioCallbacks) {
-    this.ai = new GoogleGenAI({ apiKey: callbacks.apiKey });
-    this.callbacks = callbacks;
-  }
+  // Key is read server-side; use empty string as placeholder — 
+  // actual key injection happens via server-side proxy or a 
+  // short-lived ephemeral token fetched from /api/gemini-token
+  this.ai = new GoogleGenAI({ apiKey: '' });
+  this.callbacks = callbacks;
+}
 
   async connect(systemInstruction: string, tools: any[]) {
     this.callbacks.onStatusChange('connecting');
-
     try {
-      this.session = await this.ai.live.connect({
+      // Fetch the API key securely from your server
+      const tokenRes = await fetch('/api/gemini-token');
+      const { apiKey } = await tokenRes.json();
+      this.ai = new GoogleGenAI({ apiKey });
+
+    this.session = await this.ai.live.connect({
         model: "gemini-2.5-flash-native-audio-preview-12-2025",
         config: {
           responseModalities: [Modality.AUDIO],

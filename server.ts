@@ -71,6 +71,32 @@ app.get("/widget.js", (req, res) => {
 
 // --- API Routes ---
 
+// POST /api/gemini-proxy  (for text chat)
+app.post('/api/gemini-proxy', async (req, res) => {
+  const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+  if (!GEMINI_API_KEY) return res.status(500).json({ error: 'API key not configured' });
+
+  const { model, messages, config } = req.body;
+  try {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: messages, ...config })
+    });
+    const data = await response.json();
+    res.json(data);
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/gemini-token', (req, res) => {
+  // Only return the key to authenticated requests in production
+  res.json({ apiKey: process.env.GEMINI_API_KEY || '' });
+});
+
+
+
 app.get("/api/appointments/check", async (req, res) => {
   const { startTime } = req.query;
   if (!startTime) return res.status(400).json({ error: "startTime is required" });

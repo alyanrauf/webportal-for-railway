@@ -265,18 +265,26 @@ export const initSalonData = async () => {
 };
 
 export const startNewChat = async (settings: SalonSettings) => {
-  if (!settings.geminiApiKey) {
-    throw new Error("Gemini API Key not configured in salon settings.");
-  }
-  
-  const ai = new GoogleGenAI({ apiKey: settings.geminiApiKey });
-  return ai.chats.create({
-    model: "gemini-2.5-flash",
-    config: {
-      systemInstruction: getSystemInstruction(settings),
-      tools,
+  // Key is now on the server — no key needed in the browser
+  // Return a lightweight wrapper that calls your server proxy
+  return {
+    _settings: settings,
+    sendMessage: async (params: { message: { parts: any[] } }) => {
+      const res = await fetch('/api/gemini-proxy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'gemini-2.5-flash',
+          messages: params.message.parts,
+          config: {
+            system_instruction: { parts: [{ text: getSystemInstruction(settings) }] },
+            tools,
+          }
+        })
+      });
+      return res.json();
     }
-  });
+  };
 };
 
 export async function executeToolAction(name: string, args: any) {
